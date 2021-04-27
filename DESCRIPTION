@@ -5,7 +5,7 @@ Authors@R:
     person(given = "Michael",
            family = "Koohafkan",
            role = c("aut", "cre"),
-           email = "Michael.Koohafkan@water.ca.gov")
+           email = "Michael.Koohafkan@gmail.com")
 Description: Provides an R interface to the CA DWR Water Quality Portal
     via the TelemetryDirect Web Services REST API. For DWR internal use only.
 License: GPL (>= 3)
