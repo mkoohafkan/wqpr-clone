@@ -1,0 +1,77 @@
+---
+title: "Fouling analysis"
+author: "Michael Koohafkan"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Fouling Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+This is an experimental procedure for unifying laboratory and field
+data to generate Wagner ratings. It is subject to change depending on
+how wagner rating information storage is implemented in WQP.
+
+
+```{r}
+library(wqpr)
+library(tidyverse)
+library(lubridate)
+```
+
+```{r}
+# get wagner groups 
+wagner.events = wag_event_sequence()
+wagner.events = wag_rating_meta(wagner.events)
+ # compute fouling error
+fouling.data = wag_fouling_error(wagner.events$Removed)
+# compute drift error
+drift.data = wag_drift_error(wagner.events$Checked)
+# compute total error
+total.data = wag_total_error(wagner.events, fouling.data, drift.data)
+# convert to rating
+rating.data = wag_ratings(total.data)
+
+
+##############
+
+ggplot(wagner.events) + 
+  aes(x = start_time, xend = end_time, y = cdec_code, yend = cdec_code,
+    color = sonde_name) + 
+  geom_segment(size = 2)
+
+
+wqp_result_details() %>% 
+  select(-matches("id$")) %>% 
+  filter(
+    interval_name == "Visit",
+    analyte_name != "Stage",
+    str_detect(reading_type_name, "([a-z]{1}\\.)")
+  ) %>%
+  arrange(cdec_code, analyte_name, unit_name, reading_type_name) %>%
+  group_by(cdec_code, analyte_name, unit_name) %>%
+  summarize(count = n())
+  View()
+
+
+```
+
+```{r}
+# plot
+ggplot() + theme_bw() +
+  ggtitle("Sensor Fouling (Specific Conductance)") +
+  aes(x = interval, y = percent.error, fill = Season) +
+  geom_point(size = 3, shape = 21) +
+  scale_fill_brewer(palette = "Set1") +
+  scale_y_continuous("Fouling error", labels = scales::percent) +
+  scale_x_continuous("Visit interval (days)")
+```

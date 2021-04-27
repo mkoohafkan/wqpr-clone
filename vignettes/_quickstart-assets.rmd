@@ -1,0 +1,114 @@
+---
+title: "Quick Start: Events"
+author: "Michael Koohafkan"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Quick Start 5: Assets}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+library(knitr)
+opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Description
+
+This document provides a brief demonstration of how to query asset data
+with `wqpr`. Usage of `wqpr` functions are enhanced by the `tidyverse`
+(most notably the `dplyr` and `tidyr` packages) and date/time parsing
+utilities provided by `lubridate`.
+
+```{r message = FALSE}
+library(tidyverse)
+library(lubridate)
+```
+
+Assets are equipment or consumables associated with a
+specific event. Assets can be used to describe equipment exchanges
+im the field or to identify specific calibration standards or
+verification instruments used in the process of checking equipment. 
+There are three types of assets in WQP:
+
+- Monitoring equipment (sondes, data loggers, etc.)
+- Verification instruments (turbidimeter, NIST-certified thermometer, etc.)
+- Calibration standard solutions (Electrical Conductivity standard,
+  polymer beads, Rhodamine dye, etc.)
+
+Every event has separate sections for entering monitoring equipment,
+verification instruments, and calibration standard solutions. 
+Separate web services are provided for querying each type of asset.
+While calibration standard solutions and verifications instruments
+are associated directly with an event, monitoring equipment is
+associated with events via "actions" that track the life
+cycle of the equipment over time. Actions describe how the
+equipment was manipulated (e.g., installed, calibrated, used to
+verify measurements by other equipment, etc.) and the station
+"location" where the equipment was used (e.g., in situ or at a
+particular depth). 
+
+## Querying assets
+
+In these examples we will explore
+assets maintained by the MARSH program. Because we are only querying data,
+we will use the production database.
+
+```{r}
+wqp_use_database("production")
+wqp_use_program("marsh")
+```
+
+A complete list of assets can be retrieved using the functions
+`wqp_standard_solution_details()`,
+`wqp_verification_instrument_details()`, and
+`wqp_action_details()` (monitoring equipment).
+
+```{r}
+wqp_standard_solution_details()
+wqp_verification_instruments()
+wqp_action_details()
+```
+
+In this example, we'll pull assets associated with the event at
+National Steel explored in the
+[Events Quickstart](quickstart-events.html) vignette. 
+
+```{r}
+event.data = wqp_event_details() %>%
+  filter(
+    str_detect(station_name, "National Steel"),
+    event_type_name == "Visit",
+    between(arrival_time, as_datetime("2019-07-01"),
+      as_datetime("2019-11-01"))
+  ) %>%
+  slice(1)
+```
+
+Once the event ID is known, assets associated with a particular event
+can be queried by either using `filter()` on the details tables
+via the functions `wqp_standard_solutions()`,
+`wqp_verification_instruments()`, and `wqp_actions()`.
+
+```{r, eval = FALSE}
+wqp_actions(event.data$event_id, bind = TRUE)
+```
+
+```{r, include = FALSE, results = "asis"}
+wqp_actions(event.data$event_id, bind = TRUE) %>%
+  select(event_id, ends_with("name")) %>%
+  kable()
+```
+
+## Inserting assets
+
+Inserting assets is accomplished via the `wqp_insert_actions()`,
+`wqp_insert_verification_instruments()`, and
+`wqp_standard_solutions()`. Note that assets cannot be updated,
+and assets cannot be deleted via the web services; ; if an asset
+entry is found to be incorrect, the asset must be deleted
+manually using the graphical user interface.

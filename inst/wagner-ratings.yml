@@ -1,0 +1,68 @@
+-
+  analyte_name: Temperature
+  unit_name: °C
+  rating:
+    Excellent: 
+      absolute: 0.2
+    Good: 
+      absolute: 0.5
+    Fair: 
+      absolute: 0.8
+    Poor: 
+      absolute: 2.0
+-
+  analyte_name: Specific Conductance
+  unit_name: μS/cm
+  rating: 
+    Excellent: 
+      percent: 3
+    Good: 
+      percent: 10
+    Fair: 
+      percent: 15
+    Poor: 
+      percent: 30
+-
+  analyte_name: Dissolved Oxygen
+  unit_name: mg/L
+  rating: 
+    Excellent: 
+      percent: 5
+      absolute: 0.3
+    Good:
+      percent: 10
+      absolute: 0.5
+    Fair: 
+      percent: 15
+      absolute: 0.8
+    Poor: 
+      percent: 20
+      absolute: 2.0
+-
+  analyte_name: pH
+  unit_name: pH Units
+  rating: 
+    Excellent: 
+      absolute: 0.2
+    Good: 
+      absolute: 0.5
+    Fair: 
+      absolute: 0.8
+    Poor: 
+      absolute: 2.0
+-
+  analyte_name: Turbidity
+  unit_name: NTU
+  rating: 
+    Excellent: 
+      percent: 5
+      absolute: 0.5
+    Good:
+      percent: 10
+      absolute: 1.0
+    Fair: 
+      percent: 15
+      absolute: 1.5
+    Poor: 
+      percent: 30
+      absolute: 3.0

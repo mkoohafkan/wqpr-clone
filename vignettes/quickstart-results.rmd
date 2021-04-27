@@ -1,0 +1,257 @@
+---
+title: "Quick Start: Results"
+author: "Michael Koohafkan"
+date: "2021-02-02"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Quick Start 3: Results}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+
+This document provides a brief demonstration of how to query result data
+(continuous or discrete) with `wqpr`. Usage of `wqpr` functions are
+enhanced by the `tidyverse` (most notably the `dplyr` and `tidyr` packages)
+and date/time parsing utilities provided by `lubridate`.
+
+
+```r
+library(tidyverse)
+library(lubridate)
+```
+
+## Description
+
+A "result" dataset is a collection of time-stamped numeric values
+(and quality control flags) at a specific location. This could be
+a continuous time series of of water quality or data collected
+intermittently or periodically at a specific location. A result
+dataset has the following properties:
+- station
+- analyte
+- constituent (combination of analyte, equipment, and measurement units)
+- reading type (e.g., time series, visit data, etc.)
+- measurement interval (e.g., 15 minute)
+- aggregation method (e.g., instantaneous, average, minimum, etc.)
+ - start and end date
+
+All result datasets are identified by an integer code (a "result id").
+The result id is unique, but not informative; generally the user will
+have knowledge of other aspects of the data (the station, analyte, 
+etc.) which are used to identify the result data of interest. A 
+complete listing of result ids and associated information can be
+retrieved using the function `wqp_result_details()`.
+
+## Querying result data
+
+In this example, we will retrieve continuous (15-minute) 
+salinity data from National Steel. We know the following
+information about the result ID of interest:
+
+ - station name: National Steel
+ - cdec code: NSL
+ - analyte: Specific Conductance
+ - reading type: Time Series
+ - interval: 15 min
+
+The National Steel water quality station is managed by the MARSH
+program. Because we are only querying data, we will use the
+production database:
+
+
+```r
+wqp_use_database("production")
+wqp_use_program("marsh")
+```
+
+
+
+We use the `filter()` function from `dplyr` to trim the result
+details information to result IDs that match this criteria.
+In this example, 3 distinct result ids are
+returned (some columns omitted from the table below for clarity):
+
+
+```r
+conductance.ids = wqp_result_details() %>%
+  filter(
+    cdec_code == "NSL",
+    analyte_name == "Specific Conductance",
+    reading_type_name == "Time Series",
+    interval_name == "15 min"
+  )
+conductance.ids
+```
+
+
+| result_id|cdec_code |analyte_name         |unit_name |start_date |end_date   |
+|---------:|:---------|:--------------------|:---------|:----------|:----------|
+|        70|NSL       |Specific Conductance |µS/cm     |1983-01-21 |2010-08-24 |
+|      9247|NSL       |Specific Conductance |µS/cm     |1983-01-21 |2018-06-27 |
+|     35577|NSL       |Specific Conductance |µS/cm     |2018-05-31 |NA         |
+
+The function `wqp_result_data()` is used to retrieve the actual
+datasets associated with a vector of result ids. We can also specify
+start and end timestamps to pull a subset of the data; if a result id
+does not contain any data matching that interval a zero-row table is
+returned. By default the function returns a list of dataframes, but
+the argument `bind = TRUE` can be used to automatically concatenate
+the datasets. In this case, we choose to retrieve data for June 
+through September of 2019:
+
+
+```r
+conductance.data = wqp_result_data(conductance.ids$result_id,
+  start.date = "2019-06-01", end.date = "2019-09-30 23:59:59",
+  bind = TRUE)
+head(conductance.data, 10)
+```
+
+
+```
+#> Warning: No data returned for Result ID(s) 70, 9247.
+```
+
+
+
+| result_id|time                | value|qaqc_flag_id | version| row|
+|---------:|:-------------------|-----:|:------------|-------:|---:|
+|     35577|2019-06-01 00:00:00 |   290|G            |       1|   1|
+|     35577|2019-06-01 00:15:00 |   301|G            |       1|   2|
+|     35577|2019-06-01 00:30:00 |   312|G            |       1|   3|
+|     35577|2019-06-01 00:45:00 |   318|G            |       1|   4|
+|     35577|2019-06-01 01:00:00 |   320|G            |       1|   5|
+|     35577|2019-06-01 01:15:00 |   313|G            |       1|   6|
+|     35577|2019-06-01 01:30:00 |   309|G            |       1|   7|
+|     35577|2019-06-01 01:45:00 |   311|G            |       1|   8|
+|     35577|2019-06-01 02:00:00 |   316|G            |       1|   9|
+|     35577|2019-06-01 02:15:00 |   324|G            |       1|  10|
+
+## Inserting result data
+
+Two functions are provide for inserting data.
+`wqp_update_result_flags()` provides a safe way to overwrite quality
+control flags without the risk of modifying the actual data values.
+`wqp_insert_result_data()` provides a more general framework for
+adding or overwriting data values as well as the accompanying quality
+control flags.
+
+In this example, we will update the flags associated with Chlorophyll a
+data from the Collinsville water quality station (CDEC code CSE) on
+February 15th. We use the Test database to avoid modifying the true
+qualified data. Inserting data to WQP requires an authorization token.
+For more information about tokens, see the
+[Setup Quickstart](quickstart-setup.html) vignette. 
+
+
+
+
+```r
+wqp_use_database("test")
+wqp_use_token("<your token>")
+```
+
+First, query the data. For simplicity, we'll pull only the first hour
+of the day.
+
+
+```r
+chlorophyll.ids = wqp_result_details() %>%
+  filter(
+    cdec_code == "CSE",
+    analyte_name == "Chlorophyll",
+    reading_type_name == "Time Series"
+  )
+
+chlorophyll.data = wqp_result_data(chlorophyll.ids$result_id,
+  start.date = "2019-02-15", end.date = "2019-02-15 01:00:00",
+  bind = TRUE) 
+```
+
+Next, overwrite the quality control flag with a new value. We'll assume
+the data has been reviewed and classified as "Good".
+
+
+```r
+chlorophyll.update = chlorophyll.data %>%
+  mutate(qaqc_flag_id = "G") 
+```
+
+Finally, use `wqp_update_result_flags()` to update the flags. We use
+the `overwrite` argument to only update the flags of data points that
+are currently marked as "unchecked".
+
+
+```r
+wqp_update_result_flags(chlorophyll.update, overwrite = "U")
+#> # A tibble: 5 x 3
+#>   result_id time                result                                          
+#>       <int> <dttm>              <chr>                                           
+#> 1     34964 2019-02-15 00:00:00 Update was successful. Program ID: 200, Result ~
+#> 2     34964 2019-02-15 00:15:00 Update was successful. Program ID: 200, Result ~
+#> 3     34964 2019-02-15 00:30:00 Update was successful. Program ID: 200, Result ~
+#> 4     34964 2019-02-15 01:00:00 Update was successful. Program ID: 200, Result ~
+#> 5     34964 2019-02-15 00:45:00 Update was successful. Program ID: 200, Result ~
+```
+
+If we pull the data again, we can confirm that the flags have been
+updated.
+
+
+```r
+wqp_result_data(chlorophyll.ids$result_id,
+  start.date = "2019-02-15", end.date = "2019-02-15 01:00:00",
+  bind = TRUE) 
+#> # A tibble: 5 x 6
+#>     row result_id time                value qaqc_flag_id version
+#>   <dbl>     <int> <dttm>              <dbl> <chr>          <int>
+#> 1     1     34964 2019-02-15 00:00:00  1.13 G                  1
+#> 2     2     34964 2019-02-15 00:15:00  1.25 G                  1
+#> 3     3     34964 2019-02-15 00:30:00  1.28 G                  1
+#> 4     4     34964 2019-02-15 00:45:00  1.14 G                  1
+#> 5     5     34964 2019-02-15 01:00:00  1.14 G                  1
+```
+
+Inserting data values is accomplished in similarly using
+`wqp_insert_data()`. In this example we overwrite existing
+data, but the same approach can be used to insert new data.
+The `overwrite` argument can be used to protect against accidental
+overwrites, e.g., setting `overwrite = FALSE` allows new values
+to be added but will not allow existing data to overwritten.
+
+
+```r
+chlorophyll.overwrite = chlorophyll.data %>%
+  mutate(value = -10, qaqc_flag_id = "B")
+wqp_insert_result_data(chlorophyll.overwrite, overwrite = TRUE)
+#> # A tibble: 5 x 3
+#>   result_id time             result                                             
+#>       <int> <chr>            <chr>                                              
+#> 1     34964 2019-02-15:00:0~ Update was successful. Program ID: 200, Result ID:~
+#> 2     34964 2019-02-15:00:1~ Update was successful. Program ID: 200, Result ID:~
+#> 3     34964 2019-02-15:00:3~ Update was successful. Program ID: 200, Result ID:~
+#> 4     34964 2019-02-15:01:0~ Update was successful. Program ID: 200, Result ID:~
+#> 5     34964 2019-02-15:00:4~ Update was successful. Program ID: 200, Result ID:~
+```
+
+If we pull the data again, we can confirm that the flags have been
+updated.
+
+
+```r
+wqp_result_data(chlorophyll.ids$result_id,
+  start.date = "2019-02-15", end.date = "2019-02-15 01:00:00",
+  bind = TRUE) 
+#> # A tibble: 5 x 6
+#>     row result_id time                value qaqc_flag_id version
+#>   <dbl>     <int> <dttm>              <dbl> <chr>          <int>
+#> 1     1     34964 2019-02-15 00:00:00   -10 B                  1
+#> 2     2     34964 2019-02-15 00:15:00   -10 B                  1
+#> 3     3     34964 2019-02-15 00:30:00   -10 B                  1
+#> 4     4     34964 2019-02-15 00:45:00   -10 B                  1
+#> 5     5     34964 2019-02-15 01:00:00   -10 B                  1
+```
+
+

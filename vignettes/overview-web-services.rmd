@@ -1,0 +1,210 @@
+---
+title: "Overview: WQP Web Services"
+author: "Michael Koohafkan"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Overview 1: WQP Web Services}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+This document describes the Water Quality Portal Web Services
+framework (WQP-WS). The first section defines and describes
+important concepts for using web services. Later sections
+describe how the WQP-WS framework is structured and the
+specific components that are available.
+
+# Introduction to Web Services
+
+In general, a web service refers to an interface offered by an 
+electronic device to another electronic device, communicating
+with each other via the World Wide Web. The WQP-WS framework
+provides an HTTP (URL-based) interface to retrieve and send data to 
+the Water Quality Portal. Data retrieval is based on a set of URL
+templates, where various parameter names and values (the 
+"query string") can be specified to customize the request. This
+type of method is commonly known as a GET request and can be
+used directly from a browser). Data sending is accomplished 
+via POST requests; POST requests require additional 
+software to construct the request as the data sent to the 
+server is contained in the "body" of the request rather than
+as part of the URL itself. The WQP-WS framework allows anonymous 
+use of GET requests for data retrieval. However, a token must be
+specified for all POST requests.
+
+The WQP-WS framework help page is accessible on both the test
+and production servers at the following URL: 
+`https://<server name>.ad.water.ca.gov/TelemetryDirectWeb/OnlineHelp`.
+This page provides a listing of the available URL templates
+and instructions on how to construct GET and POST
+requests within the WQP-WS framework.
+
+The `wqpr` package provides an easy-to-use interface both for
+formatting GET requests and constructing POST requests. 
+A variety of functions are defined to guide the specification
+of the parameters needed for each type of GET and POST 
+request. The following sections describe the various components
+of the WQP-WS framework and associated functions. For more
+information on specific functions, refer to their R 
+documentation pages (e.g. `?<function name>` command in R).
+
+# Meta
+
+WQP-WS uses the term "meta" to refer to web services that
+retrieve and define elements in WQP that are associated with
+other elements. Meta elements include stations (discrete
+sites where data is specified or collected) and locations
+within sites (e.g. "primary" or "secondary" placements for 
+equipment); analytes (water quality parameters); and contacts
+(staff members with credentials to access WQP).
+
+The `wqpr` package defines the following functions for 
+retrieving meta data:
+
+- `wqp_stations()`: retrieve station information.
+- `wqp_locations()`: retrieve location information.
+- `wqp_contacts()`: retrieve contact information.
+
+No web services are currently available for creating metadata in WQP.
+
+# Result
+
+WQP-WS uses the term "result" to refer to water quality data
+and related specifications (e.g. units, interval type, etc.)
+stored on WQP. Every result is
+identified with a unique integer id (a "result id"). A single 
+result typically contains many values, and each value has
+an associated time stamp and quality assurance flag.
+
+The `wqpr` package defines the following functions for 
+retrieving result data:
+
+- `wqp_result_details()`: retrieve list of all results.
+- `wqp_result_data()`: retrieve data from a single result.
+- `wqp_result_dates()`: retrieve start and end dates of a 
+   single result.
+- `wqp_result_constituents()`: retrieve list of analytes, 
+   units, and equipment defined at a station (referred to as 
+   a "consituent").
+- `wqp_result_reading_types()`: retrieve list of reading types
+  available for defining results.
+
+The `wqpr` package defines the following functions for 
+sending result data:
+
+- `wqp_insert_result_data()`: insert or modify values (and associated
+  time stamps and quality assurance flags) into an existing
+  result container.
+- `wqp_update_result_flags()`: modify quality assurance flags
+  of existing data without changing data values.
+- `wqp_format_result_data()`: helper function for preparing result
+  data for insert.
+ 
+# Event
+
+WQP-WS uses the term "event" to refer to site visits, lab activities
+and other discrete events logged in WQP. Every event is
+identified with a unique integer id (an "event id"). A single 
+event is defined by a station, contact, arrival timestamp, and 
+event type. Events can optionally be assigned a summary label,
+a reason label, a departure time, a watch time, and a restart time.
+
+The `wqpr` package defines the following functions for 
+retrieving event data:
+
+- `wqp_event_details()`: retrieve list of all events.
+- `wqp_events()`: retrieve specific set of events.
+- `wqp_event_types()`: retrieve list of available event types.
+- `wqp_event_reasons()`: retrieve list of available event 
+  reason labels.
+- `wqp_event_summaries()`: retrieve list of available event 
+  summary labels.
+
+The `wqpr` package defines the following functions for 
+sending event data:
+
+- `wqp_insert_events()`: insert or modify an event.
+- `wqp_format_events()`: helper function for preparing 
+  event data for insert.
+
+Result data can be implicitly associated with events provided
+the following three conditions are satisfied:
+
+1. The station of the result data matches the station of the event.
+2. The "reading type" of the result data matches the "event type"
+   of the event and the timestamp.
+3. The result data timestamp matches the arrival time of the event.
+
+If all three conditions are true, result data will be displayed
+in the event viewer GUI. 
+
+Events can also be associated with assets, described below.
+
+# Asset
+
+WQP-WS uses the term "asset" to refer to web services that
+retrieve and define elements in WQP that are associated with
+events. asset elements include monitoring equipment (sondes,
+transducers, modems, and other equipment), verification 
+instruments (certified laboratory-grade equipment used for
+verification) and standard solutions (stock solutions used 
+for sensor calibration and checking). Verification instruments
+standard solutions and sondes can be associated with events.
+Verification instruments require specification of the instrument
+serial number and calibration due date. Standard solutions 
+require specification of the lot number and expiration date.
+Sondes require specification of an action (described in the
+next section) and location (previously described in the Meta 
+section). 
+
+The `wqpr` package defines the following functions for 
+retrieving asset data:
+
+- `wqp_sondes()`: retrieve sonde information.
+- `wqp_sonde_action_types()`: retrieve sonde action types.
+- `wqp_action_details()`: retrieve sonde action information.
+- `wqp_actions()`: retrieve sonde actions associated with a specific event.
+- `wqp_verification_instrument_types()`: retrieve verification instrument types.
+- `wqp_verification_instrument_details()`: retrieve verification instrument information.
+- `wqp_verification_instruments()`: retrieve verification instruments
+  associated with a specific event.
+- `wqp_standard_solution_types()`:retrieve standard solution types.
+- `wqp_standard_solution_details()`:retrieve standard solution information.
+- `wqp_standard_solutions()`: retrieve standard solutions
+  associated with a specific event.
+
+The `wqpr` package defines the following functions for 
+sending asset data:
+
+- `wqp_insert_actions()`: insert actions into an existing event.
+- `wqp_format_actions()`: helper function for preparing 
+  action data for insert.
+- `wqp_insert_verification_instruments()`: insert verification 
+  instruments into an existing event.
+- `wqp_format_verification_instruments()`: helper function for 
+  preparing verification instrument data for insert.
+- `wqp_insert_standard_solutions()`: insert standard solutions into
+  an existing event.
+- `wqp_format_standard_solutions()`: helper function for 
+  preparing standard solution data for insert.
+
+# Other functions
+
+The `wqpr` package provides a number of helper functions for
+setting up the connection to the database. These functions
+are listed below:
+
+- `wqp_timezone()`: Return the timezone used by WQP. 
+- `wqp_use_database()`: Set the active database (production or test)
+  for subsequent calls to the WQP web services.
+- `wqp_active_database()`: Return the active database.
+- `wqp_use_program()`: Set the active program (MARSH, EMP, etc.) for
+  subsequent calls to the WQP web services.
+- `wqp_active_program()`: Return the active program.
+- `wqp_request_token()`: Open the token request page for the active 
+  database in the default browser.
+- `wqp_use_token()`: Set a token to use for subsequent POST requests.
+- `wqp_help()`: Open the help page for the active 
+  database in the default browser.
+

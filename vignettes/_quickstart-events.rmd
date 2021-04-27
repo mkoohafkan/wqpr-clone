@@ -1,0 +1,182 @@
+---
+title: "Quick Start: Events"
+author: "Michael Koohafkan"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Quick Start 4: Events}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+library(knitr)
+opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+This document provides a brief demonstration of how to query event data
+with `wqpr`. Usage of `wqpr` functions are enhanced by the `tidyverse`
+(most notably the `dplyr` and `tidyr` packages) and date/time parsing
+utilities provided by `lubridate`.
+
+```{r message = FALSE}
+library(tidyverse)
+library(lubridate)
+```
+
+## Description
+
+An "event" is a time-stamped entry that documents a particular
+incident at a specific location. Examples include a maintenance
+visit to a field station or completion of a task in a laboratory.
+An event has the following properties:
+- station
+- contact (staff person instigating or documenting the event)
+- arrival time
+- type (pre-defined category of events)
+- reason (pre-defined description of common cause or purpose of event)
+- summary (pre-defined description of common event or outcome)
+- *(optional)* exchange time (e.g., timestamp fo equipment replacement)
+- *(optional)* departure time
+- *(optional)* watch time
+- *(optional)* comment
+
+All events are identified by an integer code (an "event id").
+The event id is unique, but not informative; generally the user will
+have knowledge of other aspects of the event (the station, event type,
+or staff person associated with the event) which are used to identify
+the result data of interest. A complete listing of result ids and
+associated information can be retrieved using the function
+`wqp_result_details()`.
+
+## Querying event data
+
+In this example, we will query events at National Steel in July through
+October 2019. The National Steel water quality station is managed by
+the MARSH program. Because we are only querying data, we will use the
+production database:
+
+```{r}
+wqp_use_database("production")
+wqp_use_program("marsh")
+```
+
+Querying event data is similar to querying result data.
+Known information about events can be used to identify
+the event ids of interest by filtering the results of 
+`wqp_event_details()`:
+
+```{r eval = FALSE}
+event.data = wqp_event_details() %>%
+  filter(
+    str_detect(station_name, "National Steel"),
+    event_type_name == "Visit",
+    between(arrival_time, as_datetime("2019-07-01"),
+      as_datetime("2019-11-01"))
+  )
+event.data
+```
+
+```{r echo = FALSE, results = "asis"}
+event.data = wqp_event_details() %>%
+  filter(
+    str_detect(station_name, "National Steel"),
+    event_type_name == "Visit",
+    between(arrival_time, as_datetime("2019-07-01"),
+      as_datetime("2019-11-01"))
+  ) 
+event.data %>%
+  select(event_id, arrival_time, station_name, event_type_name) %>%
+  kable()
+```
+
+
+## Inserting event data
+
+Inserting event data is similar to inserting result data.
+In this example, we will update the flags associated with Chlorophyll a
+data from the Collinsville water quality station (CDEC code CSE) on
+February 15th. We use the Test database to avoid modifying the true
+qualified data. Inserting data to WQP requires an authorization token.
+For more information about tokens, see the
+[Setup Quickstart](quickstart-setup.html) vignette. 
+
+```{r, include = FALSE}
+wqp_use_database("test")
+```
+
+```{r, eval = FALSE}
+wqp_use_database("test")
+wqp_use_token("<your token>")
+```
+
+First, query the data. For simplicity, we'll pull just pull the first
+event occurring at National Steel.
+
+```{r, eval = FALSE}
+event.data = wqp_event_details() %>%
+  filter(
+    str_detect(station_name, "National Steel"),
+    event_type_name == "Visit"
+  ) %>%
+  slice(1)
+```
+
+```{r, echo = FALSE, results = "asis"}
+event.data = wqp_event_details() %>%
+  filter(
+    str_detect(station_name, "National Steel"),
+    event_type_name == "Visit"
+  ) %>%
+  slice(1)
+
+event.data %>%
+  select(event_id, matches("(name|time)$")) %>%
+  kable()
+```
+
+We'll update the departure time to be two hours later than originally
+recorded:
+
+```{r}
+event.update = event.data %>%
+  mutate(departure_time = departure_time + duration("2 hours"))
+```
+
+The function
+`wqp_insert_events()` is used to add new events or modify existing
+events. The `overwrite` argument can be used to protect against
+accidental overwrites, e.g., setting `overwrite = FALSE` allows new
+events to be added but will not allow existing events to be modified.
+
+```{r}
+wqp_insert_events(event.update, overwrite = TRUE)
+```
+
+If we query the event again, we can see that the departure time has
+been modified.
+
+```{r, eval = FALSE}
+wqp_event_details() %>%
+  filter(event_id == event.data$event_id)
+```
+
+```{r, echo = FALSE, results = "asis"}
+wqp_event_details() %>%
+  filter(event_id == event.data$event_id) %>%
+  select(event_id, matches("(name|time)$")) %>%
+  kable()
+```
+
+```{r include = FALSE}
+# undo
+wqp_insert_events(event.data, overwrite = TRUE)
+```
+
+Note that the web services cannot modify the station, contact, or
+arrival time because they are used as identifiers in the database; if
+these fields are found to be incorrect, the event must be modified
+manually using the graphical user interface.

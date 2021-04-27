@@ -1,0 +1,97 @@
+---
+title: "Quick Start: KOR Import"
+author: "Michael Koohafkan"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Quick Start 7: KOR Import}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+library(knitr)
+opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+This document provides a brief demonstration of how to read, format,
+and insert KOR data into WQP with `wqpr`. Usage of `wqpr` functions are
+enhanced by the `tidyverse` (most notably the `dplyr` and `tidyr`
+packages) and date/time parsing utilities provided by `lubridate`.
+
+```{r message = FALSE}
+library(tidyverse)
+library(lubridate)
+```
+
+## Description
+
+The YSI KOR Software is a platform for managing data collected from
+EXO sondes. Data logger and modem malfunction can cause telemetry
+outages resulting in data not being transferred to WQP. In In these
+cases, the KOR software can be used to retrieve data stored locally
+on the sonde and export it to a file. The `wqpr` package provides
+functions for loading, formatting, and inserting KOR export data
+into WQP. The general steps for processing KOR data are:
+
+1) Read the KOR data using `kor_read()`
+2) Process and validate the data using `kor_format()`
+3) (*optional*) trim the data to prevent overwriting existing
+   WQP data with `kor_trim()`
+4) Insert the data using `wqp_insert_result_data()`.
+
+Step 4 is described generally in the
+[Results Quickstart](quickstart-results.html) vignette.
+
+## Reading KOR data
+
+The function `kor_read()` is a convenience function that handles
+reading data from the KOR export file and reformatting field names
+and values. The function will also rename analytes provided it can
+find an entry in the internal package variable
+`kor.analyte.dictionary`.
+
+```{r}
+file.path = "path/to/file.csv"
+kor.data = kor_read(file.path)
+```
+
+## Formatting KOR data
+
+The function `kor_format()` is essentially a wrapper for
+`wqp_format_result_data()` that allows the additional required
+fields `"reading_type_name"` and `"interval_name"` to be specified
+as function arguments. By default, the function specifies that
+`reading_type_name = "Time Series"` and `interval_name = "15 min"`
+which is consistent with the identifiers used by Suisun Marsh Program.
+
+```{r}
+kor.formatted = kor_format(kor.data)
+```
+
+## Trimming KOR data
+
+In cases where telemetry has malfunctioned, it is very common that
+the export KOR file will include some portion of data that was
+successfully sent to the database. The function
+`kor_trim()` checks the KOR data against the database and drops
+entries that are not missing in the database.
+
+```{r}
+kor.trimmed = kor_trim(kor.data)
+```
+
+## Inserting KOR data
+
+Once the KOR data has been formatted and trimmed, it can be inserted
+into the database using `wqp_insert_result_data()`. 
+
+```{r, eval = FALSE}
+wqp_insert_result_data(kor.trimmed)
+```
+
+For more information, see the
+[Results Quickstart](quickstart-results.html) vignette.

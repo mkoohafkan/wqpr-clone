@@ -1,0 +1,55 @@
+Package: wqpr
+Title: Water Quality Portal Retrieve
+Version: 0.13-0
+Authors@R: 
+    person(given = "Michael",
+           family = "Koohafkan",
+           role = c("aut", "cre"),
+           email = "Michael.Koohafkan@water.ca.gov")
+Description: Provides an R interface to the CA DWR Water Quality Portal
+    via the TelemetryDirect Web Services REST API. For DWR internal use only.
+License: GPL (>= 3)
+Encoding: UTF-8
+Depends: R (>= 3.5)
+Imports: 
+    utils,
+    curl (>= 4.0),
+    glue (>= 1.3),
+    readr (>= 1.3),
+    stringr (>= 1.4),
+    dplyr (>= 1.0),
+    tibble (>= 2.1),
+    tidyr (>= 1.1),
+    rlang (>= 0.4),
+    purrr (>= 0.3),
+    lubridate (>= 1.7),
+    readxl (>= 1.3),
+    yaml (>= 2.2)
+Suggests: 
+    knitr (>= 1.20),
+    rmarkdown (>= 2.6),
+    testthat (>= 2.1.0),
+    tidyverse (>= 1.3)
+LazyData: true
+RoxygenNote: 7.1.1
+VignetteBuilder: knitr
+Roxygen: list(markdown = TRUE)
+Collate: 
+    'checkers.r'
+    'util.r'
+    'serviceformats.r'
+    'services.r'
+    'setup.r'
+    'list.r'
+    'getters.r'
+    'events.r'
+    'actions.r'
+    'results.r'
+    'standardsolutions.r'
+    'verificationinstruments.r'
+    'forms.r'
+    'kor.r'
+    'package.r'
+    'reports.r'
+    'wagner.r'
+    'zzz.r'

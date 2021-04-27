@@ -1,0 +1,104 @@
+---
+title: "Quickstart: Electronic Forms"
+author: "Michael Koohafkan"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Quickstart 6: Electronic Forms}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+## Description
+
+This document provides a brief demonstration of how to process
+electronic forms with `wqpr`. Usage of `wqpr` functions are enhanced
+by the `tidyverse` (most notably the `dplyr` and `tidyr` packages)
+and date/time parsing utilities provided by `lubridate`.
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(wqpr)
+```
+
+An electronic form is an Excel file containing a forward-facing
+"data entry" sheet and a collection of locked sheets that format
+the data from the entry sheet into machine-readable format
+for use with `wqpr` functions:
+
+* EVENT (*required*): data defining an event to be inserted.
+* RESULT (*optional*): data defining result data to be inserted.
+* ACTION (*optional*): data defining action data to be inserted
+  with the new event.
+* INSTRUMENT (*optional*): data defining verification instrument data
+  to be inserted with the new event.
+* SOLUTION (*optional*): data defining standard solution data to be
+  inserted with the new event.
+
+# Processing electronic forms
+
+Processing electronic forms follows a multi-step process, with each
+step encapsulated by its own function in `wqpr`: 
+
+1) Read the form data using `frm_read()`
+2) Process and validate the data using `frm_format()`
+3) (*optional*) Check if the form data conflicts with existing data
+   using `frm_check()`
+4) Insert the data using `frm_insert()` 
+
+Reading all sheets from a form is accomplished with a single call to
+`frm_read()`. This function reads in data from available sheets and
+formats timestamps to use the WQP timezone. The function also prints
+warnings when missing data is detected.
+
+```{r}
+form.path = "path/to/form.xlsx"
+form.read = frm_read(form.path)
+```
+
+The formatting step prepares the form data for insertion by
+identifying the various IDs associated with the plain-language labels
+in the form (e.g., identifying the result IDs based on the CDEC code,
+analyte name, and units). This function also provides options to throw
+errors instead of warnings (to prevent later insertion of incomplete
+forms) and omit incomplete entries under certain circumstances. For
+example, missing entries for which a result ID cannot be found suggests
+that the constituent is simply not measured at that station, and thus
+should not raise an error. See the documentation of `frm_format()` for
+more details.
+
+```{r}
+form.formatted = frm_format(form.read)
+```
+
+An additional function `frm_check()` provides a way to determine if the
+formatted form data conflicts with information already in the WQP
+database. This feature was primarily designed for use with automated
+form upload scripts to ensure data is not accidentally overwritten.
+
+```{r}
+form.checked = frm_check(form.formatted)
+```
+
+If the form passes the formatting and check steps, it is ready for
+insert. The function `frm_insert()` inserts all form components of the
+form into WQP, starting with the event data. Note that failure to
+insert event data will generally cause action, verification instrument,
+and standard solution data inserts to also fail (because no event ID
+will be available to use for said inserts), but will not prevent
+result data from being inserted. More generally, failure to insert any
+one component of the form will not necessarily cause other components
+of the form to fail to insert. 
+
+```{r eval = FALSE}
+frm_insert(form.checked)
+```

@@ -1,0 +1,88 @@
+---
+title: "Quick Start: Setup"
+author: "Michael Koohafkan"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Quick Start 1: Setup}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+library(knitr)
+opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+This document provides a brief demonstration of how to
+use `wqpr` to set up communication with the WQP database. 
+
+```{r message = FALSE}
+library(wqpr)
+```
+
+The first step is choose which database and program to access. 
+The Test database
+is primarily used for experimentation and testing, and therefore the
+data may not reflect actual conditions. The Production database 
+reflects actual real-time and event data that has been subjected
+to quality assurance and control protocols.
+
+The program selection depends on what data is being accessed. the 
+MARSH program contains data from water quality stations and 
+facilities maintained by the Suisun Marsh Branch, while the EMP
+program contains data from water quality stations maintained by
+the Environmental Monitoring field program.
+
+The functions `wqp_use_database()` and `wqp_use_program()`
+set the database and program for your current setting. 
+To switch to a different database or program, simply call the
+functions again with the new specifications. To check that you
+are able to connect to the database, use `wqp_check_connection()`.
+
+```{r}
+wqp_use_database("production") # or "test"
+wqp_use_program("marsh") # or "emp"
+wqp_check_connection()
+```
+
+The WQP Web Services (WQP-WS) framework provides a number of 
+interfaces for accessing data. These interfaces are described
+in the WQP Web Services vignette and other QuickStart vignettes. 
+Web services that read data from the database (GET requests) do
+not require authentication. However, services that *write* data
+to the database (POST requests) require an authorization token.
+To get an authorization token assigned to you, you must open
+the token request page in your browser while logged into the DWR
+network. The helper function `wqp_request_token()` provides a
+shortcut to accomplish this. The function `wqp_use_token()`
+sets the token for the current session, and the function
+`wqp_check_token()` verifies if your token is working:
+
+```{r, eval = FALSE}
+# assumes "production" database currently in use
+wqp_request_token()
+wqp_use_token("<your token>")
+wqp_check_token()
+```
+
+The default database, program, and token can also be set via
+`options()`, which allows the package to select the default
+database, program and token on load. For example, the following
+lines can be added to your .Rprofile to automatically select your
+most common settings:
+
+```{r eval = FALSE}
+
+options(
+  wqpr.database = "production",
+  wqpr.program = "marsh",
+  wqpr.token = list(
+    test = "<your test database token>",
+	production = "<your production database token>"
+  )  
+)
+```

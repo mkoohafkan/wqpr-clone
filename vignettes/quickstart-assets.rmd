@@ -1,0 +1,139 @@
+---
+title: "Quick Start: Events"
+author: "Michael Koohafkan"
+date: "2021-02-02"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Quick Start 5: Assets}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+
+## Description
+
+This document provides a brief demonstration of how to query asset data
+with `wqpr`. Usage of `wqpr` functions are enhanced by the `tidyverse`
+(most notably the `dplyr` and `tidyr` packages) and date/time parsing
+utilities provided by `lubridate`.
+
+
+```r
+library(tidyverse)
+library(lubridate)
+```
+
+Assets are equipment or consumables associated with a
+specific event. Assets can be used to describe equipment exchanges
+im the field or to identify specific calibration standards or
+verification instruments used in the process of checking equipment. 
+There are three types of assets in WQP:
+
+- Monitoring equipment (sondes, data loggers, etc.)
+- Verification instruments (turbidimeter, NIST-certified thermometer, etc.)
+- Calibration standard solutions (Electrical Conductivity standard,
+  polymer beads, Rhodamine dye, etc.)
+
+Every event has separate sections for entering monitoring equipment,
+verification instruments, and calibration standard solutions. 
+Separate web services are provided for querying each type of asset.
+While calibration standard solutions and verifications instruments
+are associated directly with an event, monitoring equipment is
+associated with events via "actions" that track the life
+cycle of the equipment over time. Actions describe how the
+equipment was manipulated (e.g., installed, calibrated, used to
+verify measurements by other equipment, etc.) and the station
+"location" where the equipment was used (e.g., in situ or at a
+particular depth). 
+
+## Querying assets
+
+In these examples we will explore
+assets maintained by the MARSH program. Because we are only querying data,
+we will use the production database.
+
+
+```r
+wqp_use_database("production")
+wqp_use_program("marsh")
+```
+
+A complete list of assets can be retrieved using the functions
+`wqp_standard_solution_details()`,
+`wqp_verification_instrument_details()`, and
+`wqp_action_details()` (monitoring equipment).
+
+
+```r
+wqp_standard_solution_details()
+#> # A tibble: 5,511 x 5
+#>    event_id solution_id lot_number expiration_date     edit_timestamp     
+#>       <int>       <int> <chr>      <dttm>              <dttm>             
+#>  1    48559           2 14032      2020-04-26 00:00:00 2020-05-01 15:23:51
+#>  2    48559           3 17408      2021-03-26 00:00:00 2020-05-01 15:23:51
+#>  3    48559           4 A9078      2021-03-01 00:00:00 2020-05-01 15:23:51
+#>  4    48559           6 A9051      2020-02-01 00:00:00 2020-05-01 15:23:51
+#>  5    48559           7 BRYTE      2020-07-09 00:00:00 2020-05-01 15:23:51
+#>  6    48560           2 14032      2020-04-26 00:00:00 2020-05-01 15:27:27
+#>  7    48560           3 17408      2021-03-26 00:00:00 2020-05-01 15:27:27
+#>  8    48560           4 A9078      2021-03-01 00:00:00 2020-05-01 15:27:27
+#>  9    48560           6 A9051      2020-02-01 00:00:00 2020-05-01 15:27:27
+#> 10    48560           7 BRYTE      2020-07-09 00:00:00 2020-05-01 15:27:27
+#> # ... with 5,501 more rows
+wqp_verification_instruments()
+#> Error in wqp_verification_instruments(): argument "event.id" is missing, with no default
+wqp_action_details()
+#> # A tibble: 2,378 x 10
+#>    event_id sonde_id action_id action_name sonde_name location_id location_name
+#>       <int>    <int>     <int> <chr>       <chr>            <int> <chr>        
+#>  1    16560      218         7 Removed     SM-FXB-MSL           1 In-Situ      
+#>  2    16560      219         6 Installed   SM-6600-M~           1 In-Situ      
+#>  3    16562      220         7 Removed     SM-BKM-ROR           1 In-Situ      
+#>  4    16562      221         6 Installed   SM-6600-R~           1 In-Situ      
+#>  5    48279      135         8 Used to ve~ SM-26                1 In-Situ      
+#>  6    16630      210         7 Removed     SM-FXB-BDL           1 In-Situ      
+#>  7    16630      211         6 Installed   SM-6600-B~           1 In-Situ      
+#>  8    16641      204         6 Installed   SM-FXB-GYS           1 In-Situ      
+#>  9    17045      194         7 Removed     SM-BKM-CYG           1 In-Situ      
+#> 10    17141      203         6 Installed   SM-6600-T~           1 In-Situ      
+#> # ... with 2,368 more rows, and 3 more variables: station_id <int>,
+#> #   station_name <chr>, edit_timestamp <dttm>
+```
+
+In this example, we'll pull assets associated with the event at
+National Steel explored in the
+[Events Quickstart](quickstart-events.html) vignette. 
+
+
+```r
+event.data = wqp_event_details() %>%
+  filter(
+    str_detect(station_name, "National Steel"),
+    event_type_name == "Visit",
+    between(arrival_time, as_datetime("2019-07-01"),
+      as_datetime("2019-11-01"))
+  ) %>%
+  slice(1)
+```
+
+Once the event ID is known, assets associated with a particular event
+can be queried by either using `filter()` on the details tables
+via the functions `wqp_standard_solutions()`,
+`wqp_verification_instruments()`, and `wqp_actions()`.
+
+
+```r
+wqp_actions(event.data$event_id, bind = TRUE)
+```
+
+
+
+## Inserting assets
+
+Inserting assets is accomplished via the `wqp_insert_actions()`,
+`wqp_insert_verification_instruments()`, and
+`wqp_standard_solutions()`. Note that assets cannot be updated,
+and assets cannot be deleted via the web services; ; if an asset
+entry is found to be incorrect, the asset must be deleted
+manually using the graphical user interface.

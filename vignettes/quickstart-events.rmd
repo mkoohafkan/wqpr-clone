@@ -1,0 +1,170 @@
+---
+title: "Quick Start: Events"
+author: "Michael Koohafkan"
+date: "2021-02-02"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Quick Start 4: Events}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+
+This document provides a brief demonstration of how to query event data
+with `wqpr`. Usage of `wqpr` functions are enhanced by the `tidyverse`
+(most notably the `dplyr` and `tidyr` packages) and date/time parsing
+utilities provided by `lubridate`.
+
+
+```r
+library(tidyverse)
+library(lubridate)
+```
+
+## Description
+
+An "event" is a time-stamped entry that documents a particular
+incident at a specific location. Examples include a maintenance
+visit to a field station or completion of a task in a laboratory.
+An event has the following properties:
+- station
+- contact (staff person instigating or documenting the event)
+- arrival time
+- type (pre-defined category of events)
+- reason (pre-defined description of common cause or purpose of event)
+- summary (pre-defined description of common event or outcome)
+- *(optional)* exchange time (e.g., timestamp fo equipment replacement)
+- *(optional)* departure time
+- *(optional)* watch time
+- *(optional)* comment
+
+All events are identified by an integer code (an "event id").
+The event id is unique, but not informative; generally the user will
+have knowledge of other aspects of the event (the station, event type,
+or staff person associated with the event) which are used to identify
+the result data of interest. A complete listing of result ids and
+associated information can be retrieved using the function
+`wqp_result_details()`.
+
+## Querying event data
+
+In this example, we will query events at National Steel in July through
+October 2019. The National Steel water quality station is managed by
+the MARSH program. Because we are only querying data, we will use the
+production database:
+
+
+```r
+wqp_use_database("production")
+wqp_use_program("marsh")
+```
+
+Querying event data is similar to querying result data.
+Known information about events can be used to identify
+the event ids of interest by filtering the results of 
+`wqp_event_details()`:
+
+
+```r
+event.data = wqp_event_details() %>%
+  filter(
+    str_detect(station_name, "National Steel"),
+    event_type_name == "Visit",
+    between(arrival_time, as_datetime("2019-07-01"),
+      as_datetime("2019-11-01"))
+  )
+event.data
+```
+
+
+| event_id|arrival_time        |station_name                       |event_type_name |
+|--------:|:-------------------|:----------------------------------|:---------------|
+|    48500|2019-07-03 08:40:00 |Montezuma Slough at National Steel |Visit           |
+|    48501|2019-08-06 08:20:00 |Montezuma Slough at National Steel |Visit           |
+|    48502|2019-08-27 08:25:00 |Montezuma Slough at National Steel |Visit           |
+|    48503|2019-09-12 07:54:00 |Montezuma Slough at National Steel |Visit           |
+|    48504|2019-10-08 08:40:00 |Montezuma Slough at National Steel |Visit           |
+
+
+## Inserting event data
+
+Inserting event data is similar to inserting result data.
+In this example, we will update the flags associated with Chlorophyll a
+data from the Collinsville water quality station (CDEC code CSE) on
+February 15th. We use the Test database to avoid modifying the true
+qualified data. Inserting data to WQP requires an authorization token.
+For more information about tokens, see the
+[Setup Quickstart](quickstart-setup.html) vignette. 
+
+
+
+
+```r
+wqp_use_database("test")
+wqp_use_token("<your token>")
+```
+
+First, query the data. For simplicity, we'll pull just pull the first
+event occurring at National Steel.
+
+
+```r
+event.data = wqp_event_details() %>%
+  filter(
+    str_detect(station_name, "National Steel"),
+    event_type_name == "Visit"
+  ) %>%
+  slice(1)
+```
+
+
+| event_id|arrival_time        |station_name   |contact_name  |event_type_name |summary_name              |reason_name                    |departure_time      |watch_time |restart_time |
+|--------:|:-------------------|:--------------|:-------------|:---------------|:-------------------------|:------------------------------|:-------------------|:----------|:------------|
+|     3291|2001-10-09 10:02:00 |National Steel |Not specified |Visit           |summary was not specified |Visit reason was not specified |1899-12-30 10:02:00 |NA         |NA           |
+
+We'll update the departure time to be two hours later than originally
+recorded:
+
+
+```r
+event.update = event.data %>%
+  mutate(departure_time = departure_time + duration("2 hours"))
+```
+
+The function
+`wqp_insert_events()` is used to add new events or modify existing
+events. The `overwrite` argument can be used to protect against
+accidental overwrites, e.g., setting `overwrite = FALSE` allows new
+events to be added but will not allow existing events to be modified.
+
+
+```r
+wqp_insert_events(event.update, overwrite = TRUE)
+#> # A tibble: 2 x 5
+#>   arrival_time    station_id contact_id event_type_id result                    
+#>   <chr>                <int>      <int>         <int> <chr>                     
+#> 1 2001-10-09:10:~         64        200             1 Update was successful. Pr~
+#> 2 2001-10-09:10:~         64        200             1 Update was successful. Pr~
+```
+
+If we query the event again, we can see that the departure time has
+been modified.
+
+
+```r
+wqp_event_details() %>%
+  filter(event_id == event.data$event_id)
+```
+
+
+| event_id|arrival_time        |station_name   |contact_name  |event_type_name |summary_name              |reason_name                    |departure_time      |watch_time |restart_time |
+|--------:|:-------------------|:--------------|:-------------|:---------------|:-------------------------|:------------------------------|:-------------------|:----------|:------------|
+|     3291|2001-10-09 10:02:00 |National Steel |Not specified |Visit           |summary was not specified |Visit reason was not specified |1899-12-30 10:02:00 |NA         |NA           |
+
+
+
+Note that the web services cannot modify the station, contact, or
+arrival time because they are used as identifiers in the database; if
+these fields are found to be incorrect, the event must be modified
+manually using the graphical user interface.

@@ -1,0 +1,50 @@
+---
+title: "Quick Start: Metadata"
+author: "Michael Koohafkan"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Quick Start 2: Metadata}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+library(knitr)
+opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+This document provides a brief demonstration of how to query monitoring
+program metadata with `wqpr`. The examples in this document will use
+the MARSH program data on the production database:
+
+```{r}
+wqp_use_database("production")
+wqp_use_program("marsh")
+```
+
+Metadata covered in this document includes basic station information
+and contacts (staff with access to WQP). This information is used by
+multiple features in the database.
+
+The function `wqp_stations()` lists the stations available in WQP:
+
+```{r}
+wqp_stations()
+```
+
+The function `wqp_locations()` lists station "locations", i.e., places
+where equipment can be installed at a station.
+
+```{r}
+wqp_locations()
+```
+
+The function `wqp_contacts()` lists staff associated with WQP.
+
+```{r}
+wqp_contacts()
+```

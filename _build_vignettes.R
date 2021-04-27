@@ -1,0 +1,31 @@
+devtools::load_all()
+
+knitr::knit(
+  "vignettes/_quickstart-setup.rmd",
+  "vignettes/quickstart-setup.rmd"
+)
+knitr::knit(
+  "vignettes/_quickstart-meta.rmd",
+  "vignettes/quickstart-meta.rmd"
+)
+knitr::knit(
+  "vignettes/_quickstart-results.rmd",
+  "vignettes/quickstart-results.rmd"
+)
+knitr::knit(
+  "vignettes/_quickstart-events.rmd",
+  "vignettes/quickstart-events.rmd"
+)
+knitr::knit(
+  "vignettes/_quickstart-assets.rmd",
+  "vignettes/quickstart-assets.rmd"
+)
+knitr::knit(
+  "vignettes/_quickstart-forms.rmd",
+  "vignettes/quickstart-forms.rmd"
+)
+)
+knitr::knit(
+  "vignettes/_quickstart-kor.rmd",
+  "vignettes/quickstart-kor.rmd"
+)

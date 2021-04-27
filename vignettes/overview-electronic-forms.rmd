@@ -1,0 +1,148 @@
+---
+title: "Overview: Electronic Forms"
+author: "Michael Koohafkan"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Overview 2: Electronic Forms}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+This document describes the electronic forms developed for
+use with the Water Quality Portal Web Services (WQP-WS)
+framework. The WQP-WS framework is described in a 
+separate document. The first section of this document defines 
+and describes important concepts for using the electronic 
+forms. Later sections describe the specific details of each
+electronic form. The final section describes functions provided
+by the `wqpr` package for processing electronic forms and sending
+data to WQP.
+
+# Overview
+
+Electronic forms are a computer-based alternative to maintaining
+paper forms. Electronic forms can be implemented in a variety of
+ways, including PDF forms; fillable Microsoft Word documents; 
+Access database form interfaces; and documents created by other
+platforms. The key feature of electronic forms is the ability to
+extract information entered in the user interface to a 
+machine-readable format (e.g. JSON, XML, CSV, etc.).
+
+A set of electronic forms were developed using Microsoft Excel
+to provide a simplified
+bridge for inserting information on events (site visits and
+laboratory operations) into WQP using the WQP-WS framework. These
+forms eliminate redundant effort and errors associated with
+transcribing information from paper forms to the WQP event GUI.
+In addition, use of electronic forms simplifies archiving and
+facilitates auditing. The long-term goal of the electronic
+forms initiative is to automate the computation of quality
+assurance ratings.
+
+The electronic forms described here share some common 
+characteristics. Each form contains an "ENTRY" sheet that
+acts as the human interface component where data is entered.
+Additional protected sheets in the workbook are used to format
+the data entered in the "ENTRY" sheet into a machine-readable
+format designed specifically for use with `wqpr` and the WQP-WS
+framework. The additional sheets are described in the sections
+below.
+
+# Visit Form
+
+The visit form is used to capture data on site visits. This data
+includes information regarding equipment changes and discrete
+measurements of water quality following a specific quality assurance
+protocol to assess biofouling. General information on the event
+(location, date and time, primary staff member, etc.) are represented
+in the "EVENT" sheet. Measurement values are maintained in the "RESULT"
+sheet; this sheet is pre-formatted to specify the various components
+that are used to identify a specific "result" container in WQP 
+(CDEC code, analyte name, reading type name, etc.) Information on 
+equipment (i.e. sonde names and actions) are maintained in the 
+"ACTION" sheet.
+
+# Pre-measurement Calibration Form
+
+The pre-measurement calibration form is used to capture data from 
+the sonde calibration process. This data includes information regarding 
+verification instruments, calibration standards, and discrete
+measurements of water quality following a specific quality assurance
+protocol to calibrate sensors. General information on the event
+(location, date and time, primary staff member, etc.) are represented
+in the "EVENT" sheet. Measurement values are maintained in the "RESULT"
+sheet; this sheet is pre-formatted to specify the various components
+that are used to identify a specific "result" container in WQP 
+(analyte name, reading type name, rank name, etc.) Information on 
+equipment (i.e. sonde names and actions) are maintained in the 
+"ACTION" sheet. The pre-measurement calibration form also includes the
+sheet "INSTRUMENT" that captures information on the verification instruments
+used (instrument type, serial number, and calibration due date) and the
+sheet "SOLUTION" that captures information on the calibration standards used
+(standard type, lot number, and expiration date).
+
+
+# Post-deployment Check Form
+
+The post-deployment check form is used to capture data from 
+the sonde check process. This data includes information regarding 
+verification instruments, calibration standards, and discrete
+measurements of water quality following a specific quality assurance
+protocol to quantify sensor drift. General information on the event
+(location, date and time, primary staff member, etc.) are represented
+in the "EVENT" sheet. Measurement values are maintained in the "RESULT"
+sheet; this sheet is pre-formatted to specify the various components
+that are used to identify a specific "result" container in WQP 
+(analyte name, reading type name, rank name, etc.) Information on 
+equipment (i.e. sonde names and actions) are maintained in the 
+"ACTION" sheet. Similar to the pre-measurement calibration form 
+the post-deployment check form includes the sheet "INSTRUMENT" that captures 
+information on the verification instruments used (instrument type, 
+serial number, and calibration due date) and the sheet "SOLUTION" that
+captures information on the calibration standards used (standard type,
+lot number, and expiration date).
+
+# Available Utilities
+
+The `wqpr` package provides a number of utility functions for reading,
+processing, and sending electronic form data to WQP using the WQP-WS
+framework. 
+
+The `wqpr` package defines the following functions for 
+retrieving electronic form data:
+
+- `frm_read()`: read data from the electronic forms. This function
+  searches for sheets with the following names: "EVENT", "RESULT",
+  "ACTION", "INSTRUMENT", and "SOLUTION". Only the "EVENT" sheet is
+  strictly required.
+- `frm_format()`: helper function for preparing form data for insert.
+  Data formatting is performed seperately for each component of the
+  electronic form; as a result, partial failure of form data formatting
+  is possible. The output of this function includes a log that identifies
+  failure responses for each form component.
+
+The `wqpr` package defines the following function for
+sending electronic form data to WQP:
+
+- `frm_check()`: Check if the electronic form specifies a new event, i.e.,
+  checks if an EVENT already exists in WQP with the same timestamp, contact,
+  and type.
+- `frm_insert()`: Insert electronic form data. Database insertion
+  is performed seperately for each component of the
+  electronic form; as a result, partial failure of form data formatting
+  is possible. The output of this function includes a log that identifies
+  failure responses for each form component.
+
+# Electronic Form Templates
+
+The electronic form template must be adjusted for use by a particular WQP
+program (MARSH, EMP, etc.). The various identifier column headers and
+values in the "EVENT", "RESULT", "ACTION", "INSTRUMENT", and 
+"SOLUTION" sheet must match entries in the database. Templates for the 
+Suisun Marsh Branch are included in the `wqpr` for reference. The folder path
+to these templates can be determined using the following command:
+
+```r
+system.file("eforms", package = "wqpr")
+```

@@ -1,0 +1,88 @@
+---
+title: "Quick Start: Metadata"
+author: "Michael Koohafkan"
+date: "2021-02-02"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Quick Start 2: Metadata}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+
+This document provides a brief demonstration of how to query monitoring
+program metadata with `wqpr`. The examples in this document will use
+the MARSH program data on the production database:
+
+
+```r
+wqp_use_database("production")
+wqp_use_program("marsh")
+```
+
+Metadata covered in this document includes basic station information
+and contacts (staff with access to WQP). This information is used by
+multiple features in the database.
+
+The function `wqp_stations()` lists the stations available in WQP:
+
+
+```r
+wqp_stations()
+#> # A tibble: 47 x 19
+#>    station_id station_name rki   notes elevation abbreviation station_code
+#>         <int> <chr>        <chr> <chr>     <dbl> <chr>        <chr>       
+#>  1          0 *Unassigned  ""    ""           NA *Unassigned  ""          
+#>  2          2 Collinsville ""    "old~         0 Collinsville "C-2"       
+#>  3          4 Hill Slough  "SLH~ "Dec~        NA Hill Slough  "S-4"       
+#>  4          9 Green Valle~ "SLM~ "dec~         0 Green Valle~ "S-9"       
+#>  5         10 Green Valle~ "TBA~ ""           NA Green Valle~ "S-10"      
+#>  6         16 Suisun Creek "SLC~ "dec~         0 Suisun Creek "S-16"      
+#>  7         21 Chadbourne ~ "SLC~ "pdm~         0 Sunrise      "S-21"      
+#>  8         22 Sacramento ~ "RSA~ "pdm~         0 Collinsvill~ "C-2B"      
+#>  9         28 Teal Club    "SLF~ ""            0 Teal         "S-28"      
+#> 10         33 Cordelia Sl~ "SLC~ ""            0 Cygnus       "S-33"      
+#> # ... with 37 more rows, and 12 more variables: coordinate_system <chr>,
+#> #   coordinate_units <chr>, latitude <dbl>, longitude <dbl>, cdec_code <chr>,
+#> #   station_description <chr>, tech_contact_id <int>, contact_name <chr>,
+#> #   public_station <chr>, active <chr>, owner_agency_id <int>,
+#> #   agency_name <chr>
+```
+
+The function `wqp_locations()` lists station "locations", i.e., places
+where equipment can be installed at a station.
+
+
+```r
+wqp_locations()
+#> # A tibble: 4 x 3
+#>   location_id location_name      active
+#>         <int> <chr>              <chr> 
+#> 1           0 *Unassigned        Y     
+#> 2           1 In-Situ            Z     
+#> 3           7 Lab                Y     
+#> 4           8 Installed Location N
+```
+
+The function `wqp_contacts()` lists staff associated with WQP.
+
+
+```r
+wqp_contacts()
+#> # A tibble: 107 x 8
+#>    contact_id owned_by_progra~ contact_name company department job_title
+#>         <int>            <dbl> <chr>        <chr>   <chr>      <chr>    
+#>  1          0              100 *Unassigned  ""      ""         ""       
+#>  2          1              200 Randal Smith ""      ""         ""       
+#>  3          2              200 Rich Allen   ""      ""         ""       
+#>  4          3              200 Angelo Garc~ ""      ""         ""       
+#>  5          4              200 Kate Le      ""      ""         ""       
+#>  6          5                0 Erik Lobosc~ ""      ""         ""       
+#>  7          7              200 Brian Hale   ""      ""         ""       
+#>  8          8              200 Tony Pelleg~ ""      ""         ""       
+#>  9          9              200 Guest guest  ""      ""         ""       
+#> 10         11              200 Jessica Sut~ ""      ""         ""       
+#> # ... with 97 more rows, and 2 more variables: email_address <chr>,
+#> #   active <chr>
+```
